@@ -9,56 +9,90 @@
  *		- checking for invalid string literals
  */
 
-# include <set>
-# include <cstdio>
-# include <cerrno>
-# include <cctype>
-# include <cstdlib>
-# include <iostream>
-# include "string.h"
-# include "lexer.h"
+#include <set>
+#include <map>
+#include <cstdio>
+#include <cerrno>
+#include <cctype>
+#include <cstdlib>
+#include <iostream>
+#include "string.h"
+#include "tokens.h"
+#include "lexer.h"
 
 using namespace std;
 int numerrors, lineno = 1;
 
-
 /* Later, we will associate token values with each keyword */
-
-static set<string> keywords = {
-    "auto",
-    "break",
-    "case",
-    "char",
-    "const",
-    "continue",
-    "default",
-    "do",
-    "double",
-    "else",
-    "enum",
-    "extern",
-    "float",
-    "for",
-    "goto",
-    "if",
-    "int",
-    "long",
-    "register",
-    "return",
-    "short",
-    "signed",
-    "sizeof",
-    "static",
-    "struct",
-    "switch",
-    "typedef",
-    "union",
-    "unsigned",
-    "void",
-    "volatile",
-    "while",
+std::map<string, int> keywordMap = {
+	{"auto", AUTO},
+	{"break", BREAK},
+	{"case", CASE},
+	{"char", CHAR},
+	{"const", CONST},
+	{"continue", CONTINUE},
+	{"default", DEFAULT},
+	{"do", DO},
+	{"double", DOUBLE},
+	{"else", ELSE},
+	{"enum", ENUM},
+	{"extern", EXTERN},
+	{"float", FLOAT},
+	{"for", FOR},
+	{"goto", GOTO},
+	{"if", IF},
+	{"int", INT},
+	{"long", LONG},
+	{"register", REGISTER},
+	{"return", RETURN},
+	{"short", SHORT},
+	{"signed", SIGNED},
+	{"sizeof", SIZEOF},
+	{"static", STATIC},
+	{"struct", STRUCT},
+	{"switch", SWITCH},
+	{"typedef", TYPEDEF},
+	{"union", UNION},
+	{"unsigned", UNSIGNED},
+	{"void", VOID},
+	{"volatile", VOLATILE},
+	{"while", WHILE},
 };
 
+static set<string> keywords = {
+	"auto",
+	"break",
+	"case",
+	"char",
+	"const",
+	"continue",
+	"default",
+	"do",
+	"double",
+	"else",
+	"enum",
+	"extern",
+	"float",
+	"for",
+	"goto",
+	"if",
+	"int",
+	"long",
+	"register",
+	"return",
+	"short",
+	"signed",
+	"sizeof",
+	"static",
+	"struct",
+	"switch",
+	"typedef",
+	"union",
+	"unsigned",
+	"void",
+	"volatile",
+	"while",
+};
 
 /*
  * Function:	report
@@ -72,13 +106,12 @@ static set<string> keywords = {
 
 void report(const string &str, const string &arg)
 {
-    char buf[1000];
+	char buf[1000];
 
-    snprintf(buf, sizeof(buf), str.c_str(), arg.c_str());
-    cerr << "line " << lineno << ": " << buf << endl;
-    numerrors ++;
+	snprintf(buf, sizeof(buf), str.c_str(), arg.c_str());
+	cerr << "line " << lineno << ": " << buf << endl;
+	numerrors++;
 }
-
 
 /*
  * Function:	lexan
@@ -89,273 +122,287 @@ void report(const string &str, const string &arg)
 
 bool lexan(string &lexbuf)
 {
-    static int c = cin.get();
-    bool invalid, overflow;
-    long val;
-    int p;
+	static int c = cin.get();
+	bool invalid, overflow;
+	long val;
+	int p;
 
-
-    /* The invariant here is that the next character has already been read
+	/* The invariant here is that the next character has already been read
        and is ready to be classified.  In this way, we eliminate having to
        push back characters onto the stream, merely to read them again. */
 
-    while (!cin.eof()) {
-	lexbuf.clear();
+	while (!cin.eof())
+	{
+		lexbuf.clear();
 
+		/* Ignore white space */
 
-	/* Ignore white space */
+		while (isspace(c))
+		{
+			if (c == '\n')
+				lineno++;
 
-	while (isspace(c)) {
-	    if (c == '\n')
-		lineno ++;
+			c = cin.get();
+		}
 
-	    c = cin.get();
-	}
+		/* Check for an identifier or a keyword */
 
+		if (isalpha(c) || c == '_')
+		{
+			do
+			{
+				lexbuf += c;
+				c = cin.get();
+			} while (isalnum(c) || c == '_');
 
-	/* Check for an identifier or a keyword */
+			if (keywords.count(lexbuf) > 0)
+				cout << "keyword:" << lexbuf << endl;
+			else
+				cout << "identifier:" << lexbuf << endl;
 
-	if (isalpha(c) || c == '_') {
-	    do {
-		lexbuf += c;
-		c = cin.get();
-	    } while (isalnum(c) || c == '_');
+			return true;
 
-	    if (keywords.count(lexbuf) > 0)
-		cout << "keyword:" << lexbuf << endl;
-	    else
-		cout << "identifier:" << lexbuf << endl;
+			/* Check for a number */
+		}
+		else if (isdigit(c))
+		{
+			do
+			{
+				lexbuf += c;
+				c = cin.get();
+			} while (isdigit(c));
 
-	    return true;
+			errno = 0;
+			val = strtol(lexbuf.c_str(), NULL, 0);
 
+			if (errno != 0 || val != (int)val)
+				report("integer constant too large");
 
-	/* Check for a number */
+			cout << "int:" << lexbuf << endl;
+			return true;
 
-	} else if (isdigit(c)) {
-	    do {
-		lexbuf += c;
-		c = cin.get();
-	    } while (isdigit(c));
-
-	    errno = 0;
-	    val = strtol(lexbuf.c_str(), NULL, 0);
-
-	    if (errno != 0 || val != (int) val)
-		report("integer constant too large");
-
-	    cout << "int:" << lexbuf << endl;
-	    return true;
-
-
-	/* There must be an easier way to do this.  It might seem stupid at
+			/* There must be an easier way to do this.  It might seem stupid at
 	   this point to recognize each token separately, but eventually
 	   we'll be returning separate token values to the parser, so we
 	   might as well do it now. */
-
-	} else {
-	    lexbuf += c;
-
-	    switch(c) {
-
-
-	    /* Check for '||' */
-
-	    case '|':
-		c = cin.get();
-
-		if (c == '|') {
-		    lexbuf += c;
-		    c = cin.get();
 		}
+		else
+		{
+			lexbuf += c;
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+			switch (c)
+			{
 
+				/* Check for '||' */
 
-	    /* Check for '=' and '==' */
+			case '|':
+				c = cin.get();
 
-	    case '=':
-		c = cin.get();
+				if (c == '|')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
-		if (c == '=') {
-		    lexbuf += c;
-		    c = cin.get();
-		}
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+				/* Check for '=' and '==' */
 
+			case '=':
+				c = cin.get();
 
-	    /* Check for '&' and '&&' */
+				if (c == '=')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
-	    case '&':
-		c = cin.get();
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-		if (c == '&') {
-		    lexbuf += c;
-		    c = cin.get();
-		}
+				/* Check for '&' and '&&' */
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+			case '&':
+				c = cin.get();
 
+				if (c == '&')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
-	    /* Check for '!' and '!=' */
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-	    case '!':
-		c = cin.get();
+				/* Check for '!' and '!=' */
 
-		if (c == '=') {
-		    lexbuf += c;
-		    c = cin.get();
-		}
+			case '!':
+				c = cin.get();
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+				if (c == '=')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-	    /* Check for '<' and '<=' */
+				/* Check for '<' and '<=' */
 
-	    case '<':
-		c = cin.get();
+			case '<':
+				c = cin.get();
 
-		if (c == '=') {
-		    lexbuf += c;
-		    c = cin.get();
-		}
+				if (c == '=')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
+				/* Check for '>' and '>=' */
 
-	    /* Check for '>' and '>=' */
+			case '>':
+				c = cin.get();
 
-	    case '>':
-		c = cin.get();
+				if (c == '=')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
-		if (c == '=') {
-		    lexbuf += c;
-		    c = cin.get();
-		}
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+				/* Check for '-', '--', and '->' */
 
+			case '-':
+				c = cin.get();
 
-	    /* Check for '-', '--', and '->' */
+				if (c == '-')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
+				else if (c == '>')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
-	    case '-':
-		c = cin.get();
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-		if (c == '-') {
-		    lexbuf += c;
-		    c = cin.get();
-		} else if (c == '>') {
-		    lexbuf += c;
-		    c = cin.get();
-		}
+				/* Check for '+' and '++' */
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+			case '+':
+				c = cin.get();
 
+				if (c == '+')
+				{
+					lexbuf += c;
+					c = cin.get();
+				}
 
-	    /* Check for '+' and '++' */
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-	    case '+':
-		c = cin.get();
+				/* Check for simple, single character tokens */
 
-		if (c == '+') {
-		    lexbuf += c;
-		    c = cin.get();
-		}
+			case '*':
+			case '%':
+			case ':':
+			case ';':
+			case '(':
+			case ')':
+			case '[':
+			case ']':
+			case '{':
+			case '}':
+			case '.':
+			case ',':
+				c = cin.get();
+				cout << "operator:" << lexbuf << endl;
+				return true;
 
-		cout << "operator:" << lexbuf << endl;
-		return true;
+				/* Check for '/' or a comment */
 
+			case '/':
+				c = cin.get();
 
-	    /* Check for simple, single character tokens */
+				if (c == '*')
+				{
+					do
+					{
+						while (c != '*' && !cin.eof())
+						{
+							if (c == '\n')
+								lineno++;
 
-	    case '*': case '%': case ':': case ';':
-	    case '(': case ')': case '[': case ']':
-	    case '{': case '}': case '.': case ',':
-		c = cin.get();
-		cout << "operator:" << lexbuf << endl;
-		return true;
+							c = cin.get();
+						}
 
+						c = cin.get();
+					} while (c != '/' && !cin.eof());
 
-	    /* Check for '/' or a comment */
+					c = cin.get();
+					break;
+				}
+				else
+				{
+					cout << "operator:" << lexbuf << endl;
+					return true;
+				}
 
-	    case '/':
-		c = cin.get();
+				/* Check for a string literal */
 
-		if (c == '*') {
-		    do {
-			while (c != '*' && !cin.eof()) {
-			    if (c == '\n')
-				lineno ++;
+			case '"':
+				do
+				{
+					p = c;
+					c = cin.get();
+					lexbuf += c;
 
-			    c = cin.get();
+					if (c == '\n')
+						lineno++;
+
+				} while (p == '\\' || (c != '"' && c != '\n' && !cin.eof()));
+
+				if (c == '\n' || cin.eof())
+					report("premature end of string literal");
+				else
+				{
+					parseString(lexbuf, invalid, overflow);
+
+					if (invalid)
+						report("unknown escape sequence in string literal");
+					else if (overflow)
+						report("escape sequence out of range in string literal");
+				}
+
+				c = cin.get();
+				cout << "string:" << lexbuf << endl;
+				return true;
+
+				/* Handle EOF here as well */
+
+			case EOF:
+				return false;
+
+				/* Everything else is illegal */
+
+			default:
+				c = cin.get();
+				break;
 			}
-
-			c = cin.get();
-		    } while (c != '/' && !cin.eof());
-
-		    c = cin.get();
-		    break;
-
-		} else {
-		    cout << "operator:" << lexbuf << endl;
-		    return true;
 		}
-
-
-	    /* Check for a string literal */
-
-	    case '"':
-		do {
-		    p = c;
-		    c = cin.get();
-		    lexbuf += c;
-
-		    if (c == '\n')
-			lineno ++;
-
-		} while (p == '\\' || (c != '"' && c != '\n' && !cin.eof()));
-
-		if (c == '\n' || cin.eof())
-		    report("premature end of string literal");
-		else {
-		    parseString(lexbuf, invalid, overflow);
-
-		    if (invalid)
-			report("unknown escape sequence in string literal");
-		    else if (overflow)
-			report("escape sequence out of range in string literal");
-		}
-
-		c = cin.get();
-		cout << "string:" << lexbuf << endl;
-		return true;
-
-
-	    /* Handle EOF here as well */
-
-	    case EOF:
-		return false;
-
-
-	    /* Everything else is illegal */
-
-	    default:
-		c = cin.get();
-		break;
-	    }
 	}
-    }
 
-    return false;
+	return false;
 }
-
 
 /*
  * Function:	main
@@ -365,10 +412,10 @@ bool lexan(string &lexbuf)
 
 int main()
 {
-    string lexbuf;
+	string lexbuf;
 
-    while (lexan(lexbuf))
-	continue;
+	while (lexan(lexbuf))
+		continue;
 
-    return 0;
+	return 0;
 }

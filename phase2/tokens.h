@@ -7,21 +7,85 @@
  *		either as character literals or as symbolic names.
  */
 
-# ifndef TOKENS_H
-# define TOKENS_H
+#ifndef TOKENS_H
+#define TOKENS_H
 
-enum {
+// A mapping from strings to integers
+enum
+{
     // single character operators
+    // defined in assignment 1 doc
+    // for single characters we can just use the ascci values
     ASSIGN = '=', /* . . . */
+    BAR = '|',
+    LESSTHAN = '<',
+    GREATERTHAN = '>',
+    ADD = '+',
+    SUB = '-',
+    MUL = '*',
+    DIV = '/',
+    MOD = '%',
+    AMPERSAND = '&',
+    NOT = '!',
+    DOT = '.',
+    OPENPAREN = '(',
+    CLOSEPAREN = ')',
+    OPENBRACKET = '[',
+    CLOSEBRACKET = ']',
+    OPENBRACE = '{',
+    CLOSEBRACE = '}',
+    SEMICOLON = ';',
+    COLON = ':',
+    COMMA = ',',
 
-    // keywords
-    AUTO = 256, BREAK, CASE, CHAR, CONST, CONTINUE, DEFAULT, DO, DOUBLE,
-    ELSE, ENUM, EXTERN, FLOAT, FOR, GOTO, IF, INT, LONG, REGISTER,
-    RETURN, SHORT, SIGNED, SIZEOF, STATIC, STRUCT, SWITCH, TYPEDEF,
-    UNION, UNSIGNED, VOID, VOLATILE, WHILE,
-
+    // keywords (AUTO is 256 Break is 257....)
+    AUTO = 256,
+    BREAK,
+    CASE,
+    CHAR,
+    CONST,
+    CONTINUE,
+    DEFAULT,
+    DO,
+    DOUBLE,
+    ELSE,
+    ENUM,
+    EXTERN,
+    FLOAT,
+    FOR,
+    GOTO,
+    IF,
+    INT,
+    LONG,
+    REGISTER,
+    RETURN,
+    SHORT,
+    SIGNED,
+    SIZEOF,
+    STATIC,
+    STRUCT,
+    SWITCH,
+    TYPEDEF,
+    UNION,
+    UNSIGNED,
+    VOID,
+    VOLATILE,
+    WHILE,
     // two character operators, ID, num, string, done
+    OR,
+    AND,
+    EQUALS,
+    NOTEQUALS,
+    LESSTHANOREQUALTO,
+    GREATORTHANOREQUALTO,
+    INC,
+    DEC,
+    ARROW,
+    ID,
+    NUM,
+    STRING,
+    DONE,
 
 };
 
-# endif /* TOKENS_H */
+#endif /* TOKENS_H */
